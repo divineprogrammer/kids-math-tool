@@ -1,4 +1,4 @@
-# Kids Math Practice App - For Divina 🎨
+# Kids Math Practice App
 
 A colorful, child-friendly math practice web application built with vanilla HTML, CSS, and JavaScript.
 
@@ -76,7 +76,7 @@ Edit the default setup values in `script.js` or `index.html` if you want differe
 
 ## Browser Compatibility
 
-- ✅ iPad Safari (recommended for Divina!)
+- ✅ iPad Safari (recommended!)
 - ✅ Chrome/Chromium
 - ✅ Firefox
 - ✅ Safari on Mac
@@ -115,4 +115,4 @@ kids-math-tool/
 - **Size**: Minimal - loads instantly
 - **Performance**: Smooth animations, instant math calculation
 
-Enjoy practicing math with Divina! 🌟
+Enjoy practicing math! 🌟
