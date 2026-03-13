@@ -245,8 +245,22 @@ body::before {
     margin-bottom: 0;
 }
 
+/* Compact row used for tight controls (questions / time / small toggle) */
 .setup-row.compact-row {
     margin-bottom: 0;
+    grid-template-columns: 1fr 1fr 160px; /* two flexible cols + fixed narrow column for toggle */
+    align-items: end;
+}
+
+.checkbox-field {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.operation-pill.compact .pill-text {
+    font-size: 0.95em;
 }
 
 .setup-field {

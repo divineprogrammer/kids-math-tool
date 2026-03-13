@@ -58,14 +58,22 @@
                 </div>
             </div>
 
-            <div class="setup-card compact-row">
-                <div class="setup-field">
-                    <label for="questionCount" class="field-label">Total Questions</label>
-                    <input type="number" id="questionCount" class="field-input" value="10" min="1" max="50">
-                </div>
-                <div class="setup-field">
-                    <label for="timeLimit" class="field-label">Time (minutes)</label>
-                    <input type="number" id="timeLimit" class="field-input" value="2" min="1" max="60">
+            <div class="setup-card">
+                <div class="setup-row compact-row">
+                    <div class="setup-field">
+                        <label for="questionCount" class="field-label">Total Questions</label>
+                        <input type="number" id="questionCount" class="field-input" value="10" min="1" max="50">
+                    </div>
+                    <div class="setup-field">
+                        <label for="timeLimit" class="field-label">Time (minutes)</label>
+                        <input type="number" id="timeLimit" class="field-input" value="2" min="1" max="60">
+                    </div>
+                    <div class="setup-field checkbox-field">
+                        <label class="operation-pill compact">
+                            <input type="checkbox" id="disableTimerCheck" aria-label="Disable timer">
+                            <span class="pill-text">Disable Timer</span>
+                        </label>
+                    </div>
                 </div>
             </div>
 

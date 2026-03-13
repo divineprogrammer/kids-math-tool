@@ -52,6 +52,7 @@ const minTermsSelect = document.getElementById('minTerms');
 const maxTermsSelect = document.getElementById('maxTerms');
 const questionCountInput = document.getElementById('questionCount');
 const timeLimitInput = document.getElementById('timeLimit');
+const disableTimerCheck = document.getElementById('disableTimerCheck');
 const startBtn = document.getElementById('startBtn');
 const setupError = document.getElementById('setupError');
 
@@ -98,6 +99,15 @@ function switchScreen(screenName) {
         setupScreen.classList.add('active');
     } else if (screenName === 'practice') {
         practiceScreen.classList.add('active');
+        // Ensure the timer visibility matches the Disable Timer setting on touch devices
+        const disableNow = (appState.config && appState.config.disableTimer) || (typeof disableTimerCheck !== 'undefined' && disableTimerCheck && disableTimerCheck.checked);
+        if (disableNow) {
+            if (timer) timer.style.display = 'none';
+            stopTimer();
+            appState.sessionActive = true;
+        } else {
+            if (timer) timer.style.display = '';
+        }
     } else if (screenName === 'result') {
         resultScreen.classList.add('active');
     }
@@ -137,6 +147,7 @@ function validateSetup() {
     const maxTerms = parseInt(maxTermsSelect.value);
     const questionCount = parseInt(questionCountInput.value);
     const timeLimit = parseInt(timeLimitInput.value);
+    const disableTimer = !!disableTimerCheck && disableTimerCheck.checked;
 
     // Validate digit range
     if (minDigits > maxDigits) {
@@ -156,9 +167,11 @@ function validateSetup() {
         return false;
     }
 
-    if (timeLimit < 1 || timeLimit > 60) {
-        showError('Time limit must be between 1 and 60 minutes.');
-        return false;
+    if (!disableTimer) {
+        if (timeLimit < 1 || timeLimit > 60) {
+            showError('Time limit must be between 1 and 60 minutes.');
+            return false;
+        }
     }
 
     return true;
@@ -179,7 +192,8 @@ function saveConfiguration() {
         minTerms: parseInt(minTermsSelect.value),
         maxTerms: parseInt(maxTermsSelect.value),
         questionCount: parseInt(questionCountInput.value),
-        timeLimit: parseInt(timeLimitInput.value)
+        timeLimit: parseInt(timeLimitInput.value),
+        disableTimer: !!disableTimerCheck && disableTimerCheck.checked
     };
 }
 
@@ -347,8 +361,9 @@ function updateTimer() {
  */
 function startTimer() {
     appState.timeRemaining = appState.config.timeLimit * 60;
+    timer.style.display = 'block';
     updateTimer(); // Display initial time
-    
+
     appState.timerId = setInterval(updateTimer, 1000);
     appState.sessionActive = true;
 }
@@ -362,6 +377,7 @@ function stopTimer() {
         appState.timerId = null;
     }
     appState.sessionActive = false;
+    if (timer) timer.classList.remove('warning');
 }
 
 /**
@@ -742,7 +758,17 @@ function startPractice() {
     generateQuestions();
     switchScreen('practice');
     displayQuestion();
-    startTimer();
+    // Determine whether timer should be disabled (check latest checkbox state too)
+    const disableNow = (appState.config && appState.config.disableTimer) || (typeof disableTimerCheck !== 'undefined' && disableTimerCheck && disableTimerCheck.checked);
+    if (disableNow) {
+        if (timer) timer.style.display = 'none';
+        // Ensure any running timer is stopped
+        stopTimer();
+        appState.sessionActive = true;
+    } else {
+        if (timer) timer.style.display = '';
+        startTimer();
+    }
 }
 
 /**
@@ -753,6 +779,11 @@ function resetToSetup() {
     appState.currentQuestionIndex = 0;
     appState.currentAnswer = '';
     appState.questions = [];
+    // Restore timer badge visibility when returning to setup
+    if (timer) {
+        timer.style.display = '';
+        timer.classList.remove('warning');
+    }
     switchScreen('setup');
 }
 
@@ -789,11 +820,30 @@ maxTermsSelect.addEventListener('input', () => {
 });
 
 // Setup screen
-startBtn.addEventListener('click', () => {
+let _lastStartAt = 0;
+function handleStartAction() {
+    const now = Date.now();
+    if (now - _lastStartAt < 600) return; // debounce double events
+    _lastStartAt = now;
+
+    // Ensure we read the latest checkbox state (useful on touch devices)
+    if (typeof disableTimerCheck !== 'undefined' && disableTimerCheck) {
+        // no-op but reading ensures up-to-date property
+        const _ = disableTimerCheck.checked;
+    }
+
     if (validateSetup()) {
         saveConfiguration();
         startPractice();
     }
+}
+
+startBtn.addEventListener('click', handleStartAction);
+startBtn.addEventListener('touchend', (e) => {
+    // Prevent the following synthetic click from double-triggering and
+    // allow the checkbox toggle to settle — run start on next tick.
+    e.preventDefault();
+    setTimeout(handleStartAction, 0);
 });
 
 // Practice screen - number buttons
