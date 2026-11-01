@@ -22,7 +22,7 @@
 let appState = {
     currentScreen: 'setup',
     config: {
-        operations: ['addition'],
+        operations: ['addition', 'subtraction', 'multiplication'],
         minDigits: 1,
         maxDigits: 2,
         minTerms: 2,
@@ -46,6 +46,7 @@ const resultScreen = document.getElementById('resultScreen');
 // Setup screen elements
 const additionCheck = document.getElementById('additionCheck');
 const subtractionCheck = document.getElementById('subtractionCheck');
+const multiplicationCheck = document.getElementById('multiplicationCheck');
 const minDigitsSelect = document.getElementById('minDigits');
 const maxDigitsSelect = document.getElementById('maxDigits');
 const minTermsSelect = document.getElementById('minTerms');
@@ -136,7 +137,7 @@ function validateSetup() {
     clearError();
 
     // Check if at least one operation is selected
-    if (!additionCheck.checked && !subtractionCheck.checked) {
+    if (!additionCheck.checked && !subtractionCheck.checked && !multiplicationCheck.checked) {
         showError('Please select at least one operation.');
         return false;
     }
@@ -184,6 +185,7 @@ function saveConfiguration() {
     const operations = [];
     if (additionCheck.checked) operations.push('addition');
     if (subtractionCheck.checked) operations.push('subtraction');
+    if (multiplicationCheck.checked) operations.push('multiplication');
 
     appState.config = {
         operations: operations,
@@ -234,79 +236,116 @@ function getRandomDigitCount() {
 function getRandomOperator() {
     const ops = appState.config.operations;
     const operator = ops[Math.floor(Math.random() * ops.length)];
-    return operator === 'addition' ? '+' : '-';
+
+    if (operator === 'addition') return '+';
+    if (operator === 'subtraction') return '-';
+    return '×';
 }
 
 /**
  * Generate a single math expression ensuring no negative running total
+ * and keeping answers within the on-screen keypad range.
  * Returns object: { expression: string, correctAnswer: number }
  */
 function generateExpression() {
     const minTerms = appState.config.minTerms;
     const maxTerms = appState.config.maxTerms;
-    const termCount = randomInt(minTerms, maxTerms);
-    
-    let expression = '';
-    let runningTotal = 0;
-    let operators = [];
-    let terms = [];
-    
-    // Generate first term
-    let digitCount = getRandomDigitCount();
-    let firstTerm = getRandomNumberWithDigits(digitCount);
-    terms.push(firstTerm);
-    runningTotal = firstTerm;
-    expression = String(firstTerm);
-    
-    // Generate remaining terms
-    for (let i = 1; i < termCount; i++) {
-        let operator = getRandomOperator();
-        operators.push(operator);
-        
-        let nextTerm;
-        
-        if (operator === '+') {
-            // For addition, generate any valid number
-            digitCount = getRandomDigitCount();
-            nextTerm = getRandomNumberWithDigits(digitCount);
-        } else {
-            // For subtraction, ensure running total doesn't go negative
-            // Generate a number that's <= running total and respects digit range
-            const maxAllowed = runningTotal;
-            digitCount = getRandomDigitCount();
-            
-            const minForDigits = digitCount === 1 ? 0 : (digitCount === 2 ? 10 : 100);
-            const maxForDigits = digitCount === 1 ? 9 : (digitCount === 2 ? 99 : 999);
-            
-            // Adjust to ensure we don't go negative
-            const minTerm = minForDigits;
-            const maxTerm = Math.min(maxForDigits, maxAllowed);
-            
-            if (minTerm <= maxTerm) {
-                nextTerm = randomInt(minTerm, maxTerm);
+
+    for (let attempt = 0; attempt < 250; attempt++) {
+        const termCount = randomInt(minTerms, maxTerms);
+
+        let expression = '';
+        let runningTotal = 0;
+        let operators = [];
+        let terms = [];
+
+        // Generate first term
+        let digitCount = getRandomDigitCount();
+        let firstTerm = getRandomNumberWithDigits(digitCount);
+        terms.push(firstTerm);
+        runningTotal = firstTerm;
+        expression = String(firstTerm);
+
+        // Generate remaining terms
+        for (let i = 1; i < termCount; i++) {
+            let operator = getRandomOperator();
+            operators.push(operator);
+
+            let nextTerm;
+
+            if (operator === '+') {
+                // For addition, generate any valid number
+                digitCount = getRandomDigitCount();
+                nextTerm = getRandomNumberWithDigits(digitCount);
+            } else if (operator === '-') {
+                // For subtraction, ensure running total doesn't go negative
+                const maxAllowed = runningTotal;
+                digitCount = getRandomDigitCount();
+
+                const minForDigits = digitCount === 1 ? 0 : (digitCount === 2 ? 10 : 100);
+                const maxForDigits = digitCount === 1 ? 9 : (digitCount === 2 ? 99 : 999);
+
+                const minTerm = minForDigits;
+                const maxTerm = Math.min(maxForDigits, maxAllowed);
+
+                if (minTerm <= maxTerm) {
+                    nextTerm = randomInt(minTerm, maxTerm);
+                } else {
+                    nextTerm = randomInt(0, Math.max(0, maxAllowed));
+                }
             } else {
-                // If the digit range doesn't fit, just use a number <= running total
-                nextTerm = randomInt(0, maxAllowed);
+                // For multiplication, keep the product manageable for the answer pad
+                const safeMaxValue = Math.max(1, Math.floor(9999 / Math.max(1, Math.abs(runningTotal))));
+                const multiplierDigits = getRandomDigitCount();
+                const minForDigits = multiplierDigits === 1 ? 1 : (multiplierDigits === 2 ? 10 : 100);
+                const maxForDigits = multiplierDigits === 1 ? 9 : (multiplierDigits === 2 ? 99 : 999);
+                const maxTerm = Math.min(maxForDigits, safeMaxValue);
+
+                if (minForDigits <= maxTerm) {
+                    nextTerm = randomInt(minForDigits, maxTerm);
+                } else {
+                    nextTerm = randomInt(1, safeMaxValue);
+                }
+            }
+
+            terms.push(nextTerm);
+            expression += ` ${operator} ${nextTerm}`;
+
+            // Update running total using left-to-right evaluation
+            if (operator === '+') {
+                runningTotal += nextTerm;
+            } else if (operator === '-') {
+                runningTotal -= nextTerm;
+            } else {
+                runningTotal *= nextTerm;
+            }
+
+            if (runningTotal < 0 || runningTotal > 9999) {
+                break;
             }
         }
-        
-        terms.push(nextTerm);
-        expression += ` ${operator} ${nextTerm}`;
-        
-        // Update running total
-        if (operator === '+') {
-            runningTotal += nextTerm;
-        } else {
-            runningTotal -= nextTerm;
+
+        if (runningTotal >= 0 && runningTotal <= 9999) {
+            return {
+                expression: expression + ' = ?',
+                expressionOnly: expression,
+                correctAnswer: runningTotal,
+                terms: terms,
+                operators: operators
+            };
         }
     }
-    
+
+    // Fallback expression when random generation is constrained
+    const fallbackTerms = [8, 3, 2];
+    const fallbackAnswer = ((8 + 3) * 2);
+
     return {
-        expression: expression + ' = ?',
-        expressionOnly: expression,
-        correctAnswer: runningTotal,
-        terms: terms,
-        operators: operators
+        expression: '8 + 3 × 2 = ?',
+        expressionOnly: '8 + 3 × 2',
+        correctAnswer: fallbackAnswer,
+        terms: fallbackTerms,
+        operators: ['+', '×']
     };
 }
 

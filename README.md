@@ -16,7 +16,7 @@ No installation, no backend, no server needed - everything runs in your browser!
 
 ### 1. **Parent Setup Screen**
 Configure a practice session:
-- Choose **Operations**: Addition, Subtraction, or both (mixed)
+- Choose **Operations**: Addition, Subtraction, Multiplication, or any mix
 - Set **Digit Range**: 1-3 digit numbers
 - Set **Term Range**: 2-5 numbers per expression
 - Number of Questions (default: 10)
@@ -25,6 +25,7 @@ Configure a practice session:
 Example valid expressions:
 - `12 + 8 = ?`
 - `15 - 7 = ?`
+- `6 × 4 = ?`
 - `20 - 5 + 3 = ?` (mixed operations, evaluated left-to-right)
 
 ### 2. **Child Practice Screen**
